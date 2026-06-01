@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Column;
 
 @Entity
 public class ReadingEntry {
@@ -14,6 +15,11 @@ public class ReadingEntry {
     private Long bookId;
     private String status;
     private Integer progressPercent;
+
+    private Integer rating;
+
+    @Column(length = 2000)
+    private String review;
 
     public Long getId() {
         return id;
@@ -41,5 +47,21 @@ public class ReadingEntry {
 
     public void setProgressPercent(Integer progressPercent) {
         this.progressPercent = progressPercent;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public String getReview() {
+        return review;
+    }
+
+    public void setReview(String review) {
+        this.review = review;
     }
 }

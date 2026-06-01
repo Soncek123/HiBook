@@ -6,6 +6,8 @@ function App() {
   const [books, setBooks] = useState([]);
   const [reading, setReading] = useState([]);
   const [progressInputs, setProgressInputs] = useState({});
+  const [ratingInputs, setRatingInputs] = useState({});
+  const [reviewInputs, setReviewInputs] = useState({});
 
   const [newBook, setNewBook] = useState({
     title: "",
@@ -24,11 +26,19 @@ function App() {
     const data = await response.json();
     setReading(data);
 
-    const inputs = {};
+    const progress = {};
+    const ratings = {};
+    const reviews = {};
+
     data.forEach((entry) => {
-      inputs[entry.id] = entry.progressPercent;
+      progress[entry.id] = entry.progressPercent ?? 0;
+      ratings[entry.id] = entry.rating ?? 0;
+      reviews[entry.id] = entry.review ?? "";
     });
-    setProgressInputs(inputs);
+
+    setProgressInputs(progress);
+    setRatingInputs(ratings);
+    setReviewInputs(reviews);
   };
 
   useEffect(() => {
@@ -63,7 +73,9 @@ function App() {
       body: JSON.stringify({
         bookId,
         status: "Want to Read",
-        progressPercent: 0
+        progressPercent: 0,
+        rating: 0,
+        review: ""
       })
     });
 
@@ -71,11 +83,18 @@ function App() {
     setPage("reading");
   };
 
-  const updateProgress = async (entry) => {
+  const updateReadingEntry = async (entry) => {
     const newPercent = Number(progressInputs[entry.id]);
+    const newRating = Number(ratingInputs[entry.id]);
+    const newReview = reviewInputs[entry.id] ?? "";
 
     if (newPercent < 0 || newPercent > 100) {
       alert("Progress must be between 0 and 100.");
+      return;
+    }
+
+    if (newRating < 0 || newRating > 5) {
+      alert("Rating must be between 0 and 5.");
       return;
     }
 
@@ -89,18 +108,26 @@ function App() {
       body: JSON.stringify({
         bookId: entry.bookId,
         status: newStatus,
-        progressPercent: newPercent
+        progressPercent: newPercent,
+        rating: newRating,
+        review: newReview
       })
     });
 
     loadReading();
   };
 
+  const renderStars = (rating) => {
+    const fullStars = "★".repeat(rating || 0);
+    const emptyStars = "☆".repeat(5 - (rating || 0));
+    return fullStars + emptyStars;
+  };
+
   return (
     <div className="app">
       <header>
         <h1>HiBook</h1>
-        <p>Track books and reading progress</p>
+        <p>Track books, reading progress, ratings, and reviews</p>
       </header>
 
       <nav>
@@ -161,28 +188,71 @@ function App() {
               const book = books.find((b) => b.id === entry.bookId);
 
               return (
-                <li key={entry.id}>
-                  <div>
+                <li key={entry.id} className="reading-item">
+                  <div className="reading-info">
                     <strong>{book ? book.title : `Book ID ${entry.bookId}`}</strong>
                     <br />
                     <span>{entry.status} · {entry.progressPercent}%</span>
+                    <br />
+                    <span className="stars">{renderStars(entry.rating)}</span>
+                    {entry.review && (
+                      <p className="review-text">"{entry.review}"</p>
+                    )}
                   </div>
 
-                  <div className="progress-editor">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={progressInputs[entry.id] ?? ""}
-                      onChange={(e) =>
-                        setProgressInputs({
-                          ...progressInputs,
-                          [entry.id]: e.target.value
-                        })
-                      }
-                    />
-                    <button onClick={() => updateProgress(entry)}>
-                      Update
+                  <div className="reading-editor">
+                    <label>
+                      Progress %
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={progressInputs[entry.id] ?? ""}
+                        onChange={(e) =>
+                          setProgressInputs({
+                            ...progressInputs,
+                            [entry.id]: e.target.value
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Rating
+                      <select
+                        value={ratingInputs[entry.id] ?? 0}
+                        onChange={(e) =>
+                          setRatingInputs({
+                            ...ratingInputs,
+                            [entry.id]: e.target.value
+                          })
+                        }
+                      >
+                        <option value="0">No rating</option>
+                        <option value="1">1 star</option>
+                        <option value="2">2 stars</option>
+                        <option value="3">3 stars</option>
+                        <option value="4">4 stars</option>
+                        <option value="5">5 stars</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      Review
+                      <textarea
+                        placeholder="Write your thoughts..."
+                        value={reviewInputs[entry.id] ?? ""}
+                        onChange={(e) =>
+                          setReviewInputs({
+                            ...reviewInputs,
+                            [entry.id]: e.target.value
+                          })
+                        }
+                      />
+                    </label>
+
+                    <button onClick={() => updateReadingEntry(entry)}>
+                      Save
                     </button>
                   </div>
                 </li>

@@ -82,3 +82,53 @@ li {
   width: 80px;
   margin: 0;
 }
+
+.reading-item {
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.reading-info {
+  flex: 1;
+}
+
+.reading-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 260px;
+}
+
+.reading-editor label {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.reading-editor input,
+.reading-editor select,
+.reading-editor textarea {
+  display: block;
+  margin-top: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.reading-editor textarea {
+  min-height: 70px;
+  resize: vertical;
+  padding: 8px;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+}
+
+.stars {
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+
+.review-text {
+  margin-top: 8px;
+  font-style: italic;
+  color: #444;
+}
