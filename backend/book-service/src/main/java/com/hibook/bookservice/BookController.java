@@ -8,9 +8,11 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class BookController {
     private final BookRepository repository;
+    private final GoogleBooksService googleBooksService;
 
-    public BookController(BookRepository repository) {
+    public BookController(BookRepository repository, GoogleBooksService googleBooksService) {
         this.repository = repository;
+        this.googleBooksService = googleBooksService;
     }
 
     @GetMapping
@@ -31,5 +33,10 @@ public class BookController {
     @DeleteMapping("/{id}")
     public void deleteBook(@PathVariable Long id) {
         repository.deleteById(id);
+    }
+
+    @GetMapping("/search-google")
+    public List<GoogleBookResult> searchGoogleBooks(@RequestParam String query) {
+        return googleBooksService.searchBooks(query);
     }
 }
