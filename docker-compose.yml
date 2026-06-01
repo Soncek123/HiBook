@@ -47,6 +47,19 @@ services:
     depends_on:
       - reading-db
 
+
+  recommendation-service:
+    build: ./backend/recommendation-service
+    container_name: hibook-recommendation-service
+    depends_on:
+      - book-service
+      - reading-service
+    environment:
+      BOOK_SERVICE_URL: http://book-service:8081
+      READING_SERVICE_URL: http://reading-service:8082
+    ports:
+      - "8083:8083"
+
   frontend:
     build: ./frontend
     container_name: hibook-frontend
