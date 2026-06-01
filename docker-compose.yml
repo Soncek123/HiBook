@@ -1,0 +1,61 @@
+services:
+  book-db:
+    image: postgres:16
+    container_name: hibook-book-db
+    environment:
+      POSTGRES_DB: hibook_books
+      POSTGRES_USER: hibook
+      POSTGRES_PASSWORD: hibook
+    ports:
+      - "5433:5432"
+    volumes:
+      - book-db-data:/var/lib/postgresql/data
+
+  reading-db:
+    image: postgres:16
+    container_name: hibook-reading-db
+    environment:
+      POSTGRES_DB: hibook_reading
+      POSTGRES_USER: hibook
+      POSTGRES_PASSWORD: hibook
+    ports:
+      - "5434:5432"
+    volumes:
+      - reading-db-data:/var/lib/postgresql/data
+
+  book-service:
+    build: ./backend/book-service
+    container_name: hibook-book-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://book-db:5432/hibook_books
+      SPRING_DATASOURCE_USERNAME: hibook
+      SPRING_DATASOURCE_PASSWORD: hibook
+    ports:
+      - "8081:8081"
+    depends_on:
+      - book-db
+
+  reading-service:
+    build: ./backend/reading-service
+    container_name: hibook-reading-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://reading-db:5432/hibook_reading
+      SPRING_DATASOURCE_USERNAME: hibook
+      SPRING_DATASOURCE_PASSWORD: hibook
+    ports:
+      - "8082:8082"
+    depends_on:
+      - reading-db
+
+  frontend:
+    build: ./frontend
+    container_name: hibook-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - book-service
+      - reading-service
+
+volumes:
+  book-db-data:
+  reading-db-data:
