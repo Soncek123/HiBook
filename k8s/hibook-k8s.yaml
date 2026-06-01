@@ -1,0 +1,290 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hibook-db-secret
+type: Opaque
+stringData:
+  POSTGRES_USER: hibook
+  POSTGRES_PASSWORD: hibook
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: book-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: reading-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-db
+  template:
+    metadata:
+      labels:
+        app: book-db
+    spec:
+      containers:
+        - name: book-db
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: hibook_books
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: hibook-db-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hibook-db-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: book-db-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: book-db-storage
+          persistentVolumeClaim:
+            claimName: book-db-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-db
+spec:
+  selector:
+    app: book-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reading-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reading-db
+  template:
+    metadata:
+      labels:
+        app: reading-db
+    spec:
+      containers:
+        - name: reading-db
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: hibook_reading
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: hibook-db-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hibook-db-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: reading-db-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: reading-db-storage
+          persistentVolumeClaim:
+            claimName: reading-db-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reading-db
+spec:
+  selector:
+    app: reading-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-service
+  template:
+    metadata:
+      labels:
+        app: book-service
+    spec:
+      containers:
+        - name: book-service
+          image: hibook-book-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://book-db:5432/hibook_books
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: hibook-db-secret
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hibook-db-secret
+                  key: POSTGRES_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-service
+spec:
+  selector:
+    app: book-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reading-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reading-service
+  template:
+    metadata:
+      labels:
+        app: reading-service
+    spec:
+      containers:
+        - name: reading-service
+          image: hibook-reading-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://reading-db:5432/hibook_reading
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: hibook-db-secret
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hibook-db-secret
+                  key: POSTGRES_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reading-service
+spec:
+  selector:
+    app: reading-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: hibook-frontend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
