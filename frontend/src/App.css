@@ -71,3 +71,14 @@ li {
   justify-content: space-between;
   align-items: center;
 }
+
+.progress-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-editor input {
+  width: 80px;
+  margin: 0;
+}

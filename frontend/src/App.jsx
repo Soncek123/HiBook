@@ -5,6 +5,7 @@ function App() {
   const [page, setPage] = useState("books");
   const [books, setBooks] = useState([]);
   const [reading, setReading] = useState([]);
+  const [progressInputs, setProgressInputs] = useState({});
 
   const [newBook, setNewBook] = useState({
     title: "",
@@ -22,6 +23,12 @@ function App() {
     const response = await fetch("http://localhost:8082/reading");
     const data = await response.json();
     setReading(data);
+
+    const inputs = {};
+    data.forEach((entry) => {
+      inputs[entry.id] = entry.progressPercent;
+    });
+    setProgressInputs(inputs);
   };
 
   useEffect(() => {
@@ -62,6 +69,31 @@ function App() {
 
     loadReading();
     setPage("reading");
+  };
+
+  const updateProgress = async (entry) => {
+    const newPercent = Number(progressInputs[entry.id]);
+
+    if (newPercent < 0 || newPercent > 100) {
+      alert("Progress must be between 0 and 100.");
+      return;
+    }
+
+    const newStatus = newPercent === 100 ? "Read" : "Currently Reading";
+
+    await fetch(`http://localhost:8082/reading/${entry.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        bookId: entry.bookId,
+        status: newStatus,
+        progressPercent: newPercent
+      })
+    });
+
+    loadReading();
   };
 
   return (
@@ -134,6 +166,24 @@ function App() {
                     <strong>{book ? book.title : `Book ID ${entry.bookId}`}</strong>
                     <br />
                     <span>{entry.status} · {entry.progressPercent}%</span>
+                  </div>
+
+                  <div className="progress-editor">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={progressInputs[entry.id] ?? ""}
+                      onChange={(e) =>
+                        setProgressInputs({
+                          ...progressInputs,
+                          [entry.id]: e.target.value
+                        })
+                      }
+                    />
+                    <button onClick={() => updateProgress(entry)}>
+                      Update
+                    </button>
                   </div>
                 </li>
               );
